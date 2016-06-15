@@ -18,6 +18,7 @@
 import smbus
 import time
 import datetime
+import RPi.GPIO as GPIO
 
 # Define some constants from the datasheet
 
@@ -47,24 +48,29 @@ ONE_TIME_LOW_RES_MODE = 0x23
 bus = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
 def convertToNumber(data):
-  # Simple function to convert 2 bytes of data
-  # into a decimal number
-  return ((data[1] + (256 * data[0])) / 1.2)
+	# Simple function to convert 2 bytes of data
+	# into a decimal number
+	return ((data[1] + (256 * data[0])) / 1.2)
 
 def readLight(addr=DEVICE):
-  data = bus.read_i2c_block_data(addr,ONE_TIME_HIGH_RES_MODE_1)
-  return convertToNumber(data)
+	data = bus.read_i2c_block_data(addr,ONE_TIME_HIGH_RES_MODE_1)
+	return convertToNumber(data)
 
 def main():
-  while True:
-    # Get current time in UNIX timestamp
-    now = int(time.time())
-    # Compute message to write in file
-    msg = "Light Level : " + str(readLight()) + " lx | Timestamp: " + str(now)
-    with open ('Snapshots.txt', 'a') as file_:
-      file_.write(msg + '\n')
-    print msg
-    time.sleep(60.0)
+	GPIO.setmode(GPIO.BCM)
+	GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+	while True:
+		presence = "0"
+		if GPIO.input(4):
+			presence = "1"
+		# Get current time in UNIX timestamp
+		now = int(time.time())
+		# Compute message to write in file
+		msg = "Light Level : " + str(readLight()) + " lx | Presence: " + presence + " | Timestamp: " + str(now)
+		with open ('Snapshots.txt', 'a') as file_:
+			file_.write(msg + '\n')
+		print (msg)
+		time.sleep(60.0)
   
 if __name__=="__main__":
-   main()
+	main()
