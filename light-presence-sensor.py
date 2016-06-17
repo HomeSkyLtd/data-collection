@@ -19,6 +19,7 @@ import smbus
 import time
 import datetime
 import RPi.GPIO as GPIO
+import os.path
 
 # Define some constants from the datasheet
 
@@ -47,6 +48,8 @@ ONE_TIME_LOW_RES_MODE = 0x23
 #bus = smbus.SMBus(0) # Rev 1 Pi uses 0
 bus = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
+FILE = 'Snapshots.txt'
+
 def convertToNumber(data):
 	# Simple function to convert 2 bytes of data
 	# into a decimal number
@@ -59,6 +62,11 @@ def readLight(addr=DEVICE):
 def main():
 	GPIO.setmode(GPIO.BCM)
 	GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    # Write header if needed
+    if not os.path.isfile(FILE):
+        with open ('Snapshots.txt', 'a') as file_:
+            file_.write('{:>10} {:>10} {:>12}\n'.format('light', 'presence', 'timestamp'))
+
 	while True:
 		presence = "0"
 		if GPIO.input(4):
@@ -66,9 +74,10 @@ def main():
 		# Get current time in UNIX timestamp
 		now = int(time.time())
 		# Compute message to write in file
-		msg = "Light Level : " + str(readLight()) + " lx | Presence: " + presence + " | Timestamp: " + str(now)
+        light = readLight()
+		msg = "Light Level : " + str(light) + " lx | Presence: " + presence + " | Timestamp: " + str(now)
 		with open ('Snapshots.txt', 'a') as file_:
-			file_.write(msg + '\n')
+			file_.write("{:>10.3f} {:>10} {:>12}\n".format(light, presence, now))
 		print (msg)
 		time.sleep(60.0)
   
