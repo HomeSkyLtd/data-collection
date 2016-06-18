@@ -66,7 +66,7 @@ def main():
     GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     # Write header if needed
     if not os.path.isfile(FILE):
-        with open('Snapshots.txt', 'a') as file_:
+        with open(FILE, 'a') as file_:
             file_.write('{:>10} {:>10} {:>12}\n'.format('light', 'presence', 'timestamp'))
 
     while True:
