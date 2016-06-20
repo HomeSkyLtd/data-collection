@@ -24,5 +24,6 @@ class Lamp(object):
 if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(OUTPUT, GPIO.OUT)
+    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     LAMP = Lamp()
     GPIO.add_event_detect(INPUT, GPIO.RISING, callback=LAMP.toggle_value(), bouncetime=100)
