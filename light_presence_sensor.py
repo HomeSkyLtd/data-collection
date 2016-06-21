@@ -50,6 +50,22 @@ ONE_TIME_LOW_RES_MODE = 0x23
 BUS = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
 FILE = 'Snapshots.txt'
+INPUT = 6
+OUTPUT = 5
+
+class Lamp(object):
+    """Class representing a Lamp"""
+    def __init__(self):
+        self.light_on = 0
+    def get_light(self):
+        """Get light"""
+        return self.light_on
+    def toggle_value(self, channel):
+        """Toggle value of Light_on"""
+        time.sleep(0.1)
+        if GPIO.input(INPUT):
+            self.light_on = (self.light_on + 1) % 2
+            GPIO.output(OUTPUT, self.light_on)
 
 def convert_to_number(data):
     """Simple function to convert 2 bytes of data into a decimal number"""
@@ -64,10 +80,14 @@ def main():
     """Main function to loop and gets data every 60 seconds"""
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(OUTPUT, GPIO.OUT)
+    GPIO.setup(INPUT, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    LAMP = Lamp()
+    GPIO.add_event_detect(INPUT, GPIO.RISING, callback=LAMP.toggle_value, bouncetime=100)
     # Write header if needed
     if not os.path.isfile(FILE):
         with open(FILE, 'a') as file_:
-            file_.write('{:>10} {:>10} {:>12}\n'.format('light', 'presence', 'timestamp'))
+            file_.write('{:>10} {:>10} {:>10} {:>12}\n'.format('light', 'presence', 'light_on', 'timestamp'))
 
     while True:
         presence = "0"
@@ -80,11 +100,12 @@ def main():
         msg = "Light Level : " + str(light)
         msg += " lx | Presence: " + presence
         msg += " | Timestamp: " + str(now)
+        msg += " | Light_on: " + str(LAMP.get_light())
 
         with open('Snapshots.txt', 'a') as file_:
-            file_.write("{:>10.3f} {:>10} {:>12}\n".format(light, presence, now))
+            file_.write("{:>10.3f} {:>10} {:>10} {:>12}\n".format(light, presence, LAMP.get_light(), now))
         print(msg)
-        time.sleep(60.0)
+        time.sleep(1.0)
 
 if __name__ == "__main__":
     main()
