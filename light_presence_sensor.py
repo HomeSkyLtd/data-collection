@@ -105,7 +105,7 @@ def main():
         with open('Snapshots.txt', 'a') as file_:
             file_.write("{:>10.3f} {:>10} {:>10} {:>12}\n".format(light, presence, LAMP.get_light(), now))
         print(msg)
-        time.sleep(1.0)
+        time.sleep(60.0)
 
 if __name__ == "__main__":
     main()
