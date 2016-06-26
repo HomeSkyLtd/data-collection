@@ -49,14 +49,15 @@ ONE_TIME_LOW_RES_MODE = 0x23
 #bus = smbus.SMBus(0) # Rev 1 Pi uses 0
 BUS = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
-FILE = 'Snapshots.txt'
+FILE = '/home/pi/Documents/TCC/data-collection/Snapshots.txt'
 INPUT = 6
 OUTPUT = 5
 
 class Lamp(object):
     """Class representing a Lamp"""
     def __init__(self):
-        self.light_on = 0
+        self.light_on = GPIO.input(INPUT)
+        GPIO.output(OUTPUT, self.light_on)
     def get_light(self):
         """Get light"""
         return self.light_on
@@ -102,7 +103,7 @@ def main():
         msg += " | Timestamp: " + str(now)
         msg += " | Light_on: " + str(LAMP.get_light())
 
-        with open('Snapshots.txt', 'a') as file_:
+        with open(FILE, 'a') as file_:
             file_.write("{:>10.3f} {:>10} {:>10} {:>12}\n".format(light, presence, LAMP.get_light(), now))
         print(msg)
         time.sleep(60.0)
