@@ -12,11 +12,17 @@ This script assumes that there is a column called timestamp, which is a Unix tim
 - week_day (0 for sunday and 6 for saturday)
 It removes the timestamp column, adds these 4 new column and sends the new table to stdout
 
-####lowpass-filter.R
-Usage: Rscript lowpass-filter.R VARIABLE WINDOW_SIZE
-Pass a lowpass filter in the input variable.
+####lowpass.R
+Usage: Rscript lowpass.R VARIABLE WINDOW_SIZE
+Pass a lowpass filter in the input variable, it tries to extend the value 1 on the input. Only use it for binary variables (0-1)
 
 ####edge-detector.R
 Usage: Rscript edge-detector.R VARIABLE
 This script remove all lines that are not before an edge (or change) in the selected variable.
 
+
+###Scripts for light automation
+
+####create-lamp.R 
+Usage: Rscript create-lamp.R MIN_LIGHT [START_HOUR END_HOUR]
+Create lamp variable, based on two inputs: hour and light

@@ -1,4 +1,5 @@
-
+# DATETIME-GEN
+# Extracts hour,month day, month and week day from data frame timestamp
 # Read from stdin the table
 input <- read.table("stdin", header=TRUE)
 if (is.null(input))
