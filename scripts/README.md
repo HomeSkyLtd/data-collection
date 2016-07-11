@@ -1,6 +1,13 @@
 ## R scripts
 This folder contains some R scripts to clean the data. A script perform a specific task, so to clean your data you'll need to run some of them.
 All scripts read from stdint and write to stdout.
+You need to install the package dplyr to run the scripts, just type the following in your terminal:
+```
+R
+install.packages("dplyr")
+
+```
+And then follow the instructions to install the package
 ###Scripts
 
 ####datetime-gen.R
