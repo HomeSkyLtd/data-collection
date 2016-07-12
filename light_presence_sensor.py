@@ -49,7 +49,7 @@ ONE_TIME_LOW_RES_MODE = 0x23
 #bus = smbus.SMBus(0) # Rev 1 Pi uses 0
 BUS = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
-FILE = '/home/pi/Documents/TCC/data-collection/snaps/henrique/Snapshots.txt'
+FILE = '/home/pi/Documents/TCC/data-collection/snaps/Snapshots.txt'
 INPUT = 6
 OUTPUT = 5
 
