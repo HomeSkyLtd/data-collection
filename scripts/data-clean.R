@@ -8,18 +8,18 @@ library("dplyr", quietly = TRUE, warn.conflicts = FALSE)
 #   from is the file containing the Snapshot. If it is missing, it will read from stdin
 #   Returns the read table
 snapshot.read <- function (from) {
-  if (missing(from))
-    from <- "stdin"
-  tbl_df(read.table(from, header=TRUE))
+    if (missing(from))
+        from <- "stdin"
+    tbl_df(read.table(from, header=TRUE))
 }
 
 # Saves Snapshot
 #   table is the tbl_df to save
 #   to is the file to save the snapshot. If it is missing, send to stdout
 snapshot.write <- function (table, to) {
-  if (missing(to))
-    to <- ""
-  write.table(x = table, file = to, quote = FALSE, row.names = FALSE)
+    if (missing(to))
+        to <- ""
+    write.table(x = table, file = to, quote = FALSE, row.names = FALSE)
 }
 
 #
@@ -31,9 +31,9 @@ snapshot.write <- function (table, to) {
 #   table is the tbl_df to clean
 #   Returns the new table
 snapshot.clean.timestamp <- function (table) {
-  posix <- as.POSIXlt(select(table,timestamp) %>% unlist(), origin="1970-01-01")
-  select(mutate(table, hour = posix$hour, week_day = posix$wday,
-                         month = posix$mon + 1, month_day = posix$mday), -timestamp)
+    posix <- as.POSIXlt(select(table,timestamp) %>% unlist(), origin="1970-01-01")
+    select(mutate(table, hour = posix$hour, week_day = posix$wday,
+                  month = posix$mon + 1, month_day = posix$mday), -timestamp)
 }
 
 # Binary lowpass
@@ -45,22 +45,22 @@ snapshot.clean.timestamp <- function (table) {
 #   stable_level is the stable level of the column (0 or 1). The default is 1.
 #   Returns the new table
 snapshot.clean.binary_lowpass <- function (table, column, window_size, stable_level) {
-  if (missing(stable_level))
-    stable_level <- 1
-  new_data <- table[column]
-  #Keep track of the previous stable level
-  start_level = -1
-  for (i in 1:(nrow(new_data))) {
-    if (new_data[i, 1] == stable_level) {
-      if (start_level != -1 && (i - start_level) <= window_size) {
-        new_data[start_level:i,1] = stable_level
-      }
-      start_level = i
+    if (missing(stable_level))
+        stable_level <- 1
+    new_data <- table[column]
+    #Keep track of the previous stable level
+    start_level = -1
+    for (i in 1:(nrow(new_data))) {
+        if (new_data[i, 1] == stable_level) {
+            if (start_level != -1 && (i - start_level) <= window_size) {
+                new_data[start_level:i,1] = stable_level
+            }
+            start_level = i
+        }
     }
-  }
-  temp_tb <- tbl_df(tb)
-  temp_tb[column] <- new_data
-  temp_tb
+    temp_tb <- tbl_df(tb)
+    temp_tb[column] <- new_data
+    temp_tb
 }
 
 # Get column edges
@@ -69,9 +69,10 @@ snapshot.clean.binary_lowpass <- function (table, column, window_size, stable_le
 #   column is the column that the edges must be examinatde
 #   Returns the new table
 snapshot.clean.get_edges <- function (table, column) {
-  shifted_column <- append(table[2:nrow(table), column][[1]], 0)
-  temp_tb <- mutate(table, changed_to = shifted_column)
-  temp_tb[temp_tb[column][[1]] != shifted_column,]
+    shifted_column <- append(table[2:nrow(table), column][[1]], 0)
+    temp_tb <- tbl_df(table)
+    new_column <- temp_tb[column][[1]] != shifted_column
+    temp_tb <- mutate(table, actuate = new_column)
 }
 
 # 
@@ -86,21 +87,21 @@ snapshot.clean.get_edges <- function (table, column) {
 #   end_hour is the end of the window when the light can be on (default is 23)
 #   Returns the new table
 snapshot.clean.light.add_lamp <- function (table, min_light, start_hour, end_hour) {
-  if (missing(start_hour))
-    start_hour <- 0
-  if (missing(end_hour))
-    end_hour <- 23
-  if (start_hour < end_hour)
-    mutate(table, lamp = as.integer((light >= min_light) & (hour >= start_hour & hour <= end_hour)))
-  else
-    mutate(table, lamp = as.integer((light >= min_light) & (hour >= start_hour | hour <= end_hour)))
+    if (missing(start_hour))
+        start_hour <- 0
+    if (missing(end_hour))
+        end_hour <- 23
+    if (start_hour < end_hour)
+        mutate(table, lamp = as.integer((light >= min_light) & (hour >= start_hour & hour <= end_hour)))
+    else
+        mutate(table, lamp = as.integer((light >= min_light) & (hour >= start_hour | hour <= end_hour)))
 }
 
 
 # Do default cleaning on light
 snapshot.clean.light.default <- function (table, min_light = 20, start_hour = 18, end_hour = 3) {
-  snapshot.clean.timestamp(table)  %>% 
-    snapshot.clean.light.add_lamp(min_light, start_hour, end_hour)  %>% 
-    snapshot.clean.get_edges('lamp')
+    snapshot.clean.timestamp(table)  %>% 
+        snapshot.clean.light.add_lamp(min_light, start_hour, end_hour)  %>% 
+        snapshot.clean.get_edges('lamp')
 }
-  
+
