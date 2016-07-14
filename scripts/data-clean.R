@@ -105,3 +105,38 @@ snapshot.clean.light.default <- function (table, min_light = 20, start_hour = 18
         snapshot.clean.get_edges('lamp')
 }
 
+# Smooth presence data, taking the mean value of the presence in a moment and
+# n-1 subsequent values
+snapshot.clean.smooth.presence <- function(table, n) {
+  nrows <- length(table$presence);
+  smoothed <- 
+  for (i in 1:nrows) {
+    table$presence[i] <- mean(table$presence[i:min(c(i+n-1, nrows))]);
+  }
+
+  table;
+}
+
+# Cleans the data, keeping only the variations in data represented by column
+# Removes column data afterwards, keeping only the future variation
+snapshot.clean.keep.edges.only <- function(table, column) {
+  varval <- lazyeval::interp(~(column+1) %% 2, column=as.name(column));
+  
+  smoothed_edge <- table %>%
+    snapshot.clean.get_edges(column) %>%
+    filter(actuate==TRUE) %>%
+    mutate_(.dots=setNames(list(varval), "action")) %>%
+    select_(.dots=c("-actuate", paste("-", column, sep="")));
+}
+
+
+# Does standard cleaning: process timestamps, smoothes presence and keeps only edges
+# in column.
+#   n is the number of entries used to smooth presence
+#   column is the column that will be analyzed for edges
+snapshot.clean.batch.edges.only <- function(table, n, column) {
+  table <- table %>%
+    snapshot.clean.timestamp() %>%
+    snapshot.clean.smooth.presence(n) %>%
+    snapshot.clean.keep.edges.only(column);
+}
