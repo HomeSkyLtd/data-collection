@@ -128,7 +128,8 @@ snap.light.add_lamp <- function (table, min_light, start_hour, end_hour) {
 snap.light.default <- function (table, min_light = 20, start_hour = 18, end_hour = 3) {
     snap.extract.timestamp(table)  %>% 
     snap.light.add_lamp(min_light, start_hour, end_hour)  %>% 
-    snap.extract.edges('lamp')
+    snap.clean.smooth('presence', 5) %>%
+    snap.extract.edges('lamp') 
 }
 
 # Cleans the data, keeping only the variations in data represented by column
