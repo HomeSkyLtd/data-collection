@@ -134,9 +134,9 @@ snap.light.default <- function (table, min_light = 20, start_hour = 18, end_hour
 # Cleans the data, keeping only the variations in data represented by column
 # Removes column data afterwards, keeping only the future variation
 snap.extract.keep.edges.only <- function(table, column) {
-  varval <- lazyeval::interp(~(column+1) %% 2, column=as.name(column))
-  
-  smoothed_edge <- table %>%
+    varval <- lazyeval::interp(~(column+1) %% 2, column=as.name(column))
+ 
+    smoothed_edge <- table %>%
     snapshot.clean.get_edges(column) %>%
     filter(actuate==TRUE) %>%
     mutate_(.dots=setNames(list(varval), "action")) %>%
@@ -149,8 +149,9 @@ snap.extract.keep.edges.only <- function(table, column) {
 #   n is the number of entries used to smooth presence
 #   column is the column that will be analyzed for edges
 snap.light.batch.edges.only <- function(table, n, column) {
-  table <- table %>%
-    snap.extract.timestamp() %>%
-    snap.clean.smooth('presence', n) %>%
-    snap.extract.keep.edges.only(column)
+    table <- table %>%
+        snap.extract.timestamp() %>%
+        snap.clean.smooth('presence', n) %>%
+        snap.extract.keep.edges.only(column)
+    table
 }
