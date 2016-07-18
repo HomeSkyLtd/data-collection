@@ -32,12 +32,20 @@ snap.save <- function (table, to) {
 #   table is the tbl_df to process
 #   column is the column to smooth
 #   n is the window size to calculate the mean
-snap.clean.smooth <- function(table, column, n) {
+snap.clean.smooth.subsequent <- function(table, column, n) {
     nrows <- length(table[column][[1]])
     for (i in 1:nrows) {
         table[i, column] <- mean(table[i:min(c(i+n-1, nrows)), column][[1]])
     }
     table
+}
+
+snap.clean.smooth.precedent <- function(table, column, n) {
+  nrows <- length(table[column][[1]])
+  for (i in 1:nrows) {
+    table[i, column] <- mean(table[max(i-n+1, 1):i, column][[1]])
+  }
+  table
 }
 
 # DEPRECATED: Binary lowpass
@@ -149,10 +157,11 @@ snap.extract.keep.edges.only <- function(table, column) {
 # in column.
 #   n is the number of entries used to smooth presence
 #   column is the column that will be analyzed for edges
-snap.light.batch.edges.only <- function(table, n, column) {
+snap.clean.batch <- function(table, n, column) {
     table <- table %>%
         snap.extract.timestamp() %>%
-        snap.clean.smooth('presence', n) %>%
+        snap.clean.smooth.subsequent('presence', n) %>%
+        snap.clean.smooth.precedent('light', n) %>%
         snap.extract.keep.edges.only(column)
     table
 }
