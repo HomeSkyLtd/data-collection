@@ -97,7 +97,7 @@ snap.extract.timestamp <- function (table) {
 # Get column edges
 #   Get the value before the edge and add a column (changed_to) indicating the produced value
 #   table is the tbl_df to clean
-#   column is the column that the edges must be examinatde
+#   column is the column that the edges must be examinated
 #   Returns the new table
 snap.extract.edges <- function (table, column) {
     shifted_column <- append(table[2:nrow(table), column][[1]], 0)
@@ -140,13 +140,29 @@ snap.light.default <- function (table, min_light = 20, start_hour = 18, end_hour
     snap.extract.edges('lamp') 
 }
 
+#Tells which action was taken. Creates a new column with this information.
+#   1 => light_on from 0 to 1
+#   0 => light_on constant
+#   -1=> light_on from 1 to 0
+snap.light.action <- function(table) {
+    column = "light_on";
+    nrows <- length(table[column][[1]]);
+    
+    before <- table[column][2:nrows, 1];
+    after <- table[column][1:(nrows - 1), 1];
+    
+    table["edge"] <- rbind(c(0), before - after);
+    
+    table
+}
+
 # Cleans the data, keeping only the variations in data represented by column
 # Removes column data afterwards, keeping only the future variation
 snap.extract.keep.edges.only <- function(table, column) {
     varval <- lazyeval::interp(~(column+1) %% 2, column=as.name(column))
  
     smoothed_edge <- table %>%
-    snapshot.clean.get_edges(column) %>%
+    snap.extract.edges(column) %>%
     filter(actuate==TRUE) %>%
     mutate_(.dots=setNames(list(varval), "action")) %>%
     select_(.dots=c("-actuate", paste("-", column, sep="")))
@@ -163,5 +179,35 @@ snap.clean.batch <- function(table, n, column) {
         snap.clean.smooth.subsequent('presence', n) %>%
         snap.clean.smooth.precedent('light', n) %>%
         snap.extract.keep.edges.only(column)
+    table
+}
+
+
+
+#
+# ACTION FUNCTIONS
+#
+
+# Detect if an action occurred or not. Add a new column where 1 = action 
+# occured and 0 = nothing occurred.
+#   column is the column that will be analyzed for adges
+snap.action.edge <- function(table, column) { 
+    nrows <- length(table[column][[1]]);
+    action <- "action";
+    
+    before <- table[column][2:nrows, 1];
+    after <- table[column][1:(nrows - 1), 1];
+    new <- before - after;
+    
+    for (i in 1:(nrows-1)) {
+        if (abs(new[i, 1]) < 0.1) {
+            new[i, 1] <- 0;
+        } else {
+            new[i, 1] <- 1;
+        }
+    }
+    
+    table[action] <- rbind(c(0), new);
+    
     table
 }
