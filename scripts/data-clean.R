@@ -175,14 +175,38 @@ snap.extract.keep.edges.only <- function(table, column) {
 #   column is the column that will be analyzed for edges
 snap.clean.batch <- function(table, n, column) {
     table <- table %>%
-        snap.extract.timestamp() %>%
+        #snap.extract.timestamp() %>%
         snap.clean.smooth.subsequent('presence', n) %>%
-        snap.clean.smooth.precedent('light', n) %>%
+        #snap.clean.smooth.precedent('light', n) %>%
         snap.extract.keep.edges.only(column)
     table
 }
 
-
+snap.clean.batch.balance <- function(table, n) {
+  table <- table %>%
+    select(c(light, presence, action)) %>%
+    snap.clean.smooth.subsequent('presence', n)
+    #snap.clean.smooth.precedent('light', n)
+  light_max <- max(table$light)
+  light_sd <- sd(table$light)
+  table$light <- table$light / light_max
+  table <- data.frame(table)
+  
+  #Oversample class 1, and undersample class 2 (without presence)
+  temp_table <- filter(table, action!=0)
+  temp_table$action <- as.factor(temp_table$action)
+  df1 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
+  
+  #Oversample class 0
+  temp_table <- filter(table, action!=1)
+  temp_table$action <- as.factor(temp_table$action)
+  df2 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
+  
+  #Get a table with classes 0 and 1 oversampled, and class 2 undersampled
+  table <- rbind(df1, filter(df2, action==0))
+  table$light <- table$light * light_max
+  table
+}
 
 #
 # ACTION FUNCTIONS
