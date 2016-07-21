@@ -1,4 +1,5 @@
 library("dplyr", quietly = TRUE, warn.conflicts = FALSE)
+library(DMwR)
 
 #
 # I/O FUNCTIONS
@@ -169,7 +170,9 @@ snap.extract.keep.edges.only <- function(table, column) {
 }
 
 
-# Does standard cleaning: process timestamps, smoothes presence and keeps only edges
+
+
+# Batch clean 1: process timestamps, smoothes presence and keeps only edges
 # in column.
 #   n is the number of entries used to smooth presence
 #   column is the column that will be analyzed for edges
@@ -182,13 +185,15 @@ snap.clean.batch <- function(table, n, column) {
     table
 }
 
-snap.clean.batch.balance <- function(table, n) {
+# Try 2: keeps track of conditions when no action occurs
+# This results in highly unbalanced classes, so apply SMOTE to balance them
+# Also, smoothes presence data using average with n subsequent samples 
+snap.clean.batch.balance <- function(table, n, edge_column) {
+  table <- snap.action.edge(input, edge_column)
   table <- table %>%
     select(c(light, presence, action)) %>%
     snap.clean.smooth.subsequent('presence', n)
-    #snap.clean.smooth.precedent('light', n)
   light_max <- max(table$light)
-  light_sd <- sd(table$light)
   table$light <- table$light / light_max
   table <- data.frame(table)
   
@@ -212,26 +217,29 @@ snap.clean.batch.balance <- function(table, n) {
 # ACTION FUNCTIONS
 #
 
-# Detect if an action occurred or not. Add a new column where 1 = action 
-# occured and 0 = nothing occurred.
+# Detect which action occurred. Add a new column "action" where 0,1 = action taken
+# and 2 = nothing occurred.
 #   column is the column that will be analyzed for adges
 snap.action.edge <- function(table, column) { 
     nrows <- length(table[column][[1]]);
     action <- "action";
     
-    before <- table[column][2:nrows, 1];
-    after <- table[column][1:(nrows - 1), 1];
-    new <- before - after;
+    after <- table[column][2:nrows, 1];
+    before <- table[column][1:(nrows - 1), 1];
+    new <- after - before;
     
     for (i in 1:(nrows-1)) {
         if (abs(new[i, 1]) < 0.1) {
+            new[i, 1] <- 2;
+        } else if (new[i, 1] < 0){
             new[i, 1] <- 0;
-        } else {
+        }
+        else {
             new[i, 1] <- 1;
         }
     }
     
-    table[action] <- rbind(c(0), new);
+    table[action] <- rbind(new, 2);
     
     table
 }
