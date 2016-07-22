@@ -114,11 +114,22 @@ snap.light.default <- function (table, min_light = 20, start_hour = 18, end_hour
     snap.extract.edges('lamp') 
 }
 
+snap.clean.batch.preprocess <- function (table, n, edge_column) {
+    table <- snap.extract.action(table, edge_column)
+    table <- table %>%
+        select(c(light, presence, action)) %>%
+        snap.clean.smooth.subsequent('presence', n)
+    light_max <- max(table$light)
+    table$light <- table$light / light_max
+    table <- data.frame(table)
+    table
+}
+
 # Try 2: keeps track of conditions when no action occurs
 # This results in highly unbalanced classes, so apply SMOTE to balance them
 # Also, smoothes presence data using average with n subsequent samples 
 snap.clean.batch.balance <- function(table, n, edge_column) {
-  table <- snap.light.action(input, edge_column)
+  table <- snap.extract.action(table, edge_column)
   table <- table %>%
     select(c(light, presence, action)) %>%
     snap.clean.smooth.subsequent('presence', n)
