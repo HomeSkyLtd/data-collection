@@ -43,39 +43,11 @@ snap.clean.smooth.subsequent <- function(table, column, n) {
 
 snap.clean.smooth.precedent <- function(table, column, n) {
   nrows <- length(table[column][[1]])
-  for (i in 1:nrows) {
+  for (i in nrows:1) {
     table[i, column] <- mean(table[max(i-n+1, 1):i, column][[1]])
   }
   table
 }
-
-# DEPRECATED: Binary lowpass
-# Pass a lowpass filter in the column. If between two 'stable level' values there are at most 'window size' rows, all
-# values in that window become 'stable level'
-#   table is the tbl_df to clean
-#   column is the column to apply the lowpass
-#   window_size is the max size of the lowpass window
-#   stable_level is the stable level of the column (0 or 1). The default is 1.
-#   Returns the new table
-snap.clean.binary_lowpass <- function (table, column, window_size, stable_level) {
-    if (missing(stable_level))
-        stable_level <- 1
-    new_data <- table[column]
-    #Keep track of the previous stable level
-    start_level = -1
-    for (i in 1:(nrow(new_data))) {
-        if (new_data[i, 1] == stable_level) {
-            if (start_level != -1 && (i - start_level) <= window_size) {
-                new_data[start_level:i,1] = stable_level
-            }
-            start_level = i
-        }
-    }
-    temp_tb <- tbl_df(tb)
-    temp_tb[column] <- new_data
-    temp_tb
-}
-
 
 
 #
@@ -95,20 +67,21 @@ snap.extract.timestamp <- function (table) {
 }
 
 
-# Get column edges
-#   Get the value before the edge and add a column (changed_to) indicating the produced value
-#   table is the tbl_df to clean
-#   column is the column that the edges must be examinated
-#   Returns the new table
-snap.extract.edges <- function (table, column) {
-    shifted_column <- append(table[2:nrow(table), column][[1]], 0)
-    temp_tb <- tbl_df(table)
-    new_column <- temp_tb[column][[1]] != shifted_column
-    temp_tb <- mutate(table, actuate = new_column)
-    temp_tb
+#Tells which action was taken. Creates a new column with this information.
+#   1 => light_on from 0 to 1
+#   0 => light_on constant
+#   -1=> light_on from 1 to 0
+snap.extract.action <- function(table, column) {
+
+    nrows <- length(table[column][[1]]);
+    
+    after <- table[column][2:nrows, 1];
+    before <- table[column][1:(nrows - 1), 1];
+    
+    table["action"] <- rbind(after - before, c(0));
+    
+    table
 }
-
-
 
 # 
 # LIGHTNING FUNCTIONS
@@ -141,55 +114,11 @@ snap.light.default <- function (table, min_light = 20, start_hour = 18, end_hour
     snap.extract.edges('lamp') 
 }
 
-#Tells which action was taken. Creates a new column with this information.
-#   1 => light_on from 0 to 1
-#   0 => light_on constant
-#   -1=> light_on from 1 to 0
-snap.light.action <- function(table) {
-    column = "light_on";
-    nrows <- length(table[column][[1]]);
-    
-    before <- table[column][2:nrows, 1];
-    after <- table[column][1:(nrows - 1), 1];
-    
-    table["edge"] <- rbind(c(0), before - after);
-    
-    table
-}
-
-# Cleans the data, keeping only the variations in data represented by column
-# Removes column data afterwards, keeping only the future variation
-snap.extract.keep.edges.only <- function(table, column) {
-    varval <- lazyeval::interp(~(column+1) %% 2, column=as.name(column))
- 
-    smoothed_edge <- table %>%
-    snap.extract.edges(column) %>%
-    filter(actuate==TRUE) %>%
-    mutate_(.dots=setNames(list(varval), "action")) %>%
-    select_(.dots=c("-actuate", paste("-", column, sep="")))
-}
-
-
-
-
-# Batch clean 1: process timestamps, smoothes presence and keeps only edges
-# in column.
-#   n is the number of entries used to smooth presence
-#   column is the column that will be analyzed for edges
-snap.clean.batch <- function(table, n, column) {
-    table <- table %>%
-        #snap.extract.timestamp() %>%
-        snap.clean.smooth.subsequent('presence', n) %>%
-        #snap.clean.smooth.precedent('light', n) %>%
-        snap.extract.keep.edges.only(column)
-    table
-}
-
 # Try 2: keeps track of conditions when no action occurs
 # This results in highly unbalanced classes, so apply SMOTE to balance them
 # Also, smoothes presence data using average with n subsequent samples 
 snap.clean.batch.balance <- function(table, n, edge_column) {
-  table <- snap.action.edge(input, edge_column)
+  table <- snap.light.action(input, edge_column)
   table <- table %>%
     select(c(light, presence, action)) %>%
     snap.clean.smooth.subsequent('presence', n)
@@ -197,6 +126,8 @@ snap.clean.batch.balance <- function(table, n, edge_column) {
   table$light <- table$light / light_max
   table <- data.frame(table)
   
+  #FOR EACH CLASS, CLUSTERIZE!
+
   #Oversample class 1, and undersample class 2 (without presence)
   temp_table <- filter(table, action!=0)
   temp_table$action <- as.factor(temp_table$action)
