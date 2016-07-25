@@ -125,34 +125,75 @@ snap.clean.batch.preprocess <- function (table, n, edge_column) {
     table
 }
 
+# Balance the data in input_table by undersampling the majority class represented
+# by class_name. Undersampling is performed using CLARA, a  k-medoids clustering
+# algorithm, sampling a few entries in each cluster
+snap.clean.clusterize_and_balance <- function(input_table, class_name) {
+  # Get the counts of each class in the input table
+  class_count <- table(input_table[, class_name])
+  
+  # Find the majority class
+  maj_class <- names(which.max(class_count))
+  
+  # Calculate the number of samples we want to have in the balanced dataset
+  # Based on this number, calculate the number of clusters
+  number_samples <- max(class_count[-which(names(class_count)==maj_class)])
+  number_clusters <- min(10, floor(number_samples/5))
+  
+  # Clusterize the data in the majority class
+  # FIXME use filter_ to avoid hardcoding "0"
+  table_to_sample <- filter(input_table, action == "0")
+  clarax <- clara(table_to_sample[, class_name], number_clusters, samples=50)
+  
+  # sampled_table is the balanced dataset. Initialize it with the entries corresponding
+  # to the minority classes
+  # FIXME use filter_ to avoid hardcoding "0"
+  sampled_table <- filter(input_table, action != "0")
+  samples_per_cluster = ceiling(number_samples/number_clusters)
+  
+  # For each cluster, sample a few entries and add it to the final dataset
+  for(i in 1:number_clusters) {
+    rows_to_sample <- which(clarax$cluster == i)
+    sampled_table <- 
+      rbind(sampled_table, table_to_sample[
+        sample(rows_to_sample, samples_per_cluster), ]
+      )
+  }
+  sampled_table
+}
+
 # Try 2: keeps track of conditions when no action occurs
-# This results in highly unbalanced classes, so apply SMOTE to balance them
+# This results in highly unbalanced classes, so apply some method to balance them
 # Also, smoothes presence data using average with n subsequent samples 
 snap.clean.batch.balance <- function(table, n, edge_column) {
   table <- snap.extract.action(table, edge_column)
   table <- table %>%
     select(c(light, presence, action)) %>%
     snap.clean.smooth.subsequent('presence', n)
+  
+  #Normalize light measures
   light_max <- max(table$light)
   table$light <- table$light / light_max
   table <- data.frame(table)
   
-  #FOR EACH CLASS, CLUSTERIZE!
-
+  #Undersample the majority class by clusterization
+  snap.clean.clusterize_and_balance(table, "action")
+  
+  #Don't oversample for now
   #Oversample class 1, and undersample class 2 (without presence)
-  temp_table <- filter(table, action!=0)
-  temp_table$action <- as.factor(temp_table$action)
-  df1 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
-  
-  #Oversample class 0
-  temp_table <- filter(table, action!=1)
-  temp_table$action <- as.factor(temp_table$action)
-  df2 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
-  
-  #Get a table with classes 0 and 1 oversampled, and class 2 undersampled
-  table <- rbind(df1, filter(df2, action==0))
-  table$light <- table$light * light_max
-  table
+  # temp_table <- filter(table, action!=0)
+  # temp_table$action <- as.factor(temp_table$action)
+  # df1 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
+  # 
+  # #Oversample class 0
+  # temp_table <- filter(table, action!=1)
+  # temp_table$action <- as.factor(temp_table$action)
+  # df2 <- SMOTE(form=action ~ ., data=temp_table, perc.over=600, perc.under=150)
+  # 
+  # #Get a table with classes 0 and 1 oversampled, and class 2 undersampled
+  # table <- rbind(df1, filter(df2, action==0))
+  # table$light <- table$light * light_max
+  # table
 }
 
 #
