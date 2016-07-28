@@ -30,6 +30,25 @@ snap.save <- function (table, to) {
 #
 
 # Smooth presence data, taking the mean value of the presence in a moment and
+# in the next values while there is no action
+#   table is the tbl_df to process
+#   column is the column to smooth
+#   n is the window size to calculate the mean
+snap.clean.smooth.subsequent_class <- function(table, column) {
+    table <- mutate(table, row=1:n());
+    actions <- filter(table, action != 0);
+    for (i in 1:(dim(actions)[1])) {
+        start <- actions[i, 'row'][[1]];
+        end <- actions[i+1, 'row'][[1]] - 1;
+        if (is.na(end))
+            end <- dim(table)[1];
+        # For each action, calculate the mean of the next points
+        table[start:end, column] <- mean(table[start:end, column][[1]]);
+    }
+    select(table, -row);
+}
+
+# Smooth presence data, taking the mean value of the presence in a moment and
 # n-1 subsequent values
 #   table is the tbl_df to process
 #   column is the column to smooth

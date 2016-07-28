@@ -35,10 +35,18 @@ In these files, we smoothed the data, using the subsequent points. We used as in
 The smooth used the next 4 points.
 We have the files:
 - henrique.txt and ricardo.txt 
-    The presence is smoothed here
+    The presence is smoothed here with 5 points
 - henrique_edge.txt and ricardo_edge.txt
     Contain only the points where there is an edge in the action column
 - henrique_0.txt and ricardo_0.txt
     Contain only the points where there is not an edge in the action column
- henrique_sample.txt, ricardo_sample.txt, henrique_sample_t1.txt, ricardo_sample_t1.txt, henrique_sample_t2.txt, ricardo_sample_t2.txt
+- henrique_sample.txt, ricardo_sample.txt, henrique_sample_t1.txt, ricardo_sample_t1.txt, henrique_sample_t2.txt, ricardo_sample_t2.txt
+    Contain the same number of points where there was action and where there was no action
+
+We used another smoothing function.  Instead of using a fixed number of points do take the mean, that number was the number of subsequent points with no action.
+- henrique_test_edge.txt and ricardo_test_edge.txt
+    Contain only the points where there is an edge in the action column
+- henrique_test_0.txt and ricardo_test_0.txt
+    Contain only the points where there is not an edge in the action column
+- henrique_test_sample_t1.txt, ricardo_test_sample_t1.txt etc
     Contain the same number of points where there was action and where there was no action
