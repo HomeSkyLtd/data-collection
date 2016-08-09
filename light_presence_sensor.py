@@ -49,9 +49,9 @@ ONE_TIME_LOW_RES_MODE = 0x23
 #bus = smbus.SMBus(0) # Rev 1 Pi uses 0
 BUS = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
-FILE = '/home/pi/Documents/TCC/data-collection/snaps/Snapshots.txt'
+FILE = '/home/pi/Desktop/data-collection/snaps/Snapshots.txt'
 INPUT = 6
-OUTPUT = 5
+OUTPUT = 16
 
 class Lamp(object):
     """Class representing a Lamp"""
@@ -105,7 +105,7 @@ def main():
 
         with open(FILE, 'a') as file_:
             file_.write("{:>10.3f} {:>10} {:>10} {:>12}\n".format(light, presence, LAMP.get_light(), now))
-        print(msg)
+        print msg
         time.sleep(60.0)
 
 if __name__ == "__main__":
